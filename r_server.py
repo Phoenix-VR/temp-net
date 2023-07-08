@@ -1,7 +1,8 @@
 import socket
+import asyncio
 
 sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-sock.bind(('0.0.0.0',80))
+sock.bind(("0.0.0.0",80))
 
 print("Listening for connection requests")
 sock.listen()
@@ -9,9 +10,7 @@ sock.listen()
 connections = {}
 addresses = []
 
-while True:
-    client_sock, client_addr = sock.accept()
-
+async def process_request(client_sock,client_addr):
     print("Request from:",client_addr)
     data = client_sock.recv(1024).decode()
     recv_data = data.split(":")
@@ -36,11 +35,20 @@ while True:
     elif len(connections.keys()) == 2:
         # we can finally tell the 2 connected peers when to initiate the hole punching
         for i,client in enumerate(connections.keys()):
-            connections[client].sendall("Initiate".encode())
-            if i == 0:
-                connections[client].sendall(addresses[1].encode())
-            elif i == 1:
-                connections[client].sendall(addresses[0].encode())
-            connections[client].close()
+            try:
+                connections[client].sendall("Initiate".encode())
+                if i == 0:
+                    connections[client].sendall(addresses[1].encode())
+                elif i == 1:
+                    connections[client].sendall(addresses[0].encode())
+                connections[client].close()
+            except ConnectionResetError as R:
+                continue
+            
         connections.clear()
 # recieve network address of that thing 
+
+while True:
+    client_sock, client_addr = sock.accept()
+    asyncio.run(process_request(client_sock,client_addr))
+    print("ready again")
