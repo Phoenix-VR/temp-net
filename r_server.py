@@ -31,16 +31,16 @@ async def process_request(client_sock,client_addr):
             response = "registered success"
     
     if len(connections.keys()) == 1:
-        client_sock.sendall(response.encode())
+        client_sock.sendall(str("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"+response).encode())
     elif len(connections.keys()) == 2:
         # we can finally tell the 2 connected peers when to initiate the hole punching
         for i,client in enumerate(connections.keys()):
             try:
-                connections[client].sendall("Initiate".encode())
+                connections[client].sendall(str("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"+"Initiate").encode())
                 if i == 0:
-                    connections[client].sendall(addresses[1].encode())
+                    connections[client].sendall(str("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"+addresses[1]).encode())
                 elif i == 1:
-                    connections[client].sendall(addresses[0].encode())
+                    connections[client].sendall(str("HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n"+addresses[0]).encode())
                 connections[client].close()
             except ConnectionResetError as R:
                 continue
